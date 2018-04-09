@@ -175,11 +175,11 @@ server <- function(input, output) {
   #Prints the reference if/when its there and nothing otherwise.
   #Default behavior was to print "NULL" to the output field
   #when there was no ref, which was annoying.
-  output$reference <- renderPrint({ if(is.null(v$ref)){invisible(v$ref)}else{v$ref} })
+  output$reference <- renderPrint(req(v$ref))
   
   #As above, but sends console messages to the UI. Prints nothing
   #if there are no messages.
-  output$console <- renderPrint({ if(is.null(v$con)){ invisible(v$con) }else{ v$con }  })
+  output$console <- renderPrint(req(v$con))
   
 }
 
