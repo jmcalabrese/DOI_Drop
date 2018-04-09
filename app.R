@@ -81,23 +81,9 @@ server <- function(input, output) {
   
   observeEvent(input$appHelp, {
     showModal(modalDialog(
-      title = "DOI Drop help",
-      "DOI drop takes a DOI, looks it up via the http://dx.doi.org service,",
-      "and returns the corresponding reference.",
-      "You can then check the reference for accuracy, note any corrections that",
-      "need to be made, and submit it to the database.",
-      tags$br(),
-      tags$br(),
-      "To use the app:",
-      tags$div(
-        tags$ol(
-          tags$li("Paste the DOI in the \"Enter a DOI\" box and press the \"Get reference\" button"),
-          tags$li("Check the resulting reference for errors"),
-          tags$li("Briefly describe any corrections in the \"Note corrections\" box"),
-          tags$li("Click \"Submit\" to save the reference and correction notes"),
-          tags$li("To submit another reference, click \"Reset all fields\", and repeat the above steps")
-        )
-      ),
+      title = "DOI Drop help", 
+      fluidPage(includeMarkdown("help.md")),
+      size = "m",
       easyClose = TRUE
     ))
   })
