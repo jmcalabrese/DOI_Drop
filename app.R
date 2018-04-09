@@ -101,8 +101,7 @@ server <- function(input, output) {
   insertUI("#console", where = "beforeEnd", ui = NULL)  
   
   #Attempt DOI lookup only on "Get reference" button click
-  #eventReactive triggers each time button is clicked
-  REF <- eventReactive(input$getrefButton, {
+  observeEvent(input$getrefButton, {
     
     #Set some ref formatting options
     #From RefManageR
@@ -111,13 +110,9 @@ server <- function(input, output) {
     #Look up the DOI and return the ref
     #Takes DOI from the input box on webapp
     #From RefManageR
-    GetBibEntryWithDOI( rev(unlist(strsplit(input$doi, split="https://doi.org/")))[1] )
+    v$ref <- GetBibEntryWithDOI( rev(unlist(strsplit(input$doi, split="https://doi.org/")))[1] )
     
   })
-  
-  #Store the ref in a reactive variable that can
-  #later be reset.
-  observe({ v$ref <- REF() })
   
   #Actions to perform when user hits the submit botton
   observeEvent(input$submitButton, {
