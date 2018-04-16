@@ -8,7 +8,7 @@
 #
 
 library(shiny)
-library(RefManageR)
+library(rcrossref)
 library(shinyjs)
 
 #Interface
@@ -62,8 +62,6 @@ ui <- fluidPage(
            tags$hr(style="border-color: black;"),
            #hr(),
            
-           #h3("Reset all fields"),
-           
            #Reset the app to default state
            actionButton("reset", "Reset all fields"),
            
@@ -94,7 +92,7 @@ server <- function(input, output) {
   #with the get reference and submit output sections.
   #This is necessary to later clear these outputs
   #when the Reset button is clicked.
-  v <- reactiveValues(ref=NULL, con=NULL)
+  v <- reactiveValues(doi=NULL, dsp=NULL, ref=NULL, con=NULL)
   
   #Creates the output$console variable I need
   #for capturing console messages/errors.
@@ -103,46 +101,51 @@ server <- function(input, output) {
   #Attempt DOI lookup only on "Get reference" button click
   observeEvent(input$getrefButton, {
     
-    #Set some ref formatting options
-    #From RefManageR
-    BibOptions(max.names=200, bib.style="authoryear", no.print.fields=c("editor", "month", "url", "publisher"))
+    #Strip off anything preceeding the actual DOI (e.g., https://doi.org/)
+    v$doi <- sub("^.*(?=10[.])", "", input$doi, perl=T)
     
-    #Look up the DOI and return the ref
-    #Takes DOI from the input box on webapp
-    #From RefManageR
-    v$ref <- GetBibEntryWithDOI( rev(unlist(strsplit(input$doi, split="https://doi.org/")))[1] )
+    #Get the raw display ref, formatted appropriately
+    dspRaw <- cr_cn(v$doi, format="text", style="springer-basic-brackets-no-et-al")
+    
+    #Clip off the leading number and space
+    dspFr <- sub("^[0-9]\\.\\s","", x=dspRaw)
+    
+    #Drop the doi from the end of the ref
+    dspClean <- sub("\\sdoi:\\s.*","", x=dspFr)
+    
+    #Save the cleaned display ref for output
+    v$dsp <- dspClean
     
   })
   
   #Actions to perform when user hits the submit botton
   observeEvent(input$submitButton, {
     
-    #Check if input field has something in it, and if yes
-    #write that input to the notes field of the reference.
-    #This will automatically create the notes field if it
-    #doesn't already exist.
-    if(input$notes != ""){v$ref$notes <- input$notes}
+    #Get the ref in RIS format
+    v$ref <- cr_cn(v$doi, format="ris")
+    
+    #Capture the note from the input field
+    notes <- paste0("\n", "N1  - ", input$notes, "\n")
+    
+    #This finds the carriage return immediately before
+    #the ER field and replaces it with "notes". 
+    #Therefore "notes" needs to both begin and end
+    #with a carriage return
+    v$ref <- sub("\n(?=ER)", notes, v$ref, perl=T)
     
     #Check if the output file already exists and
     #create it if not.
-    if(!file.exists("CEC_Refs.bib")){file.create("CEC_Refs.bib")}
+    if(!file.exists("CEC_Refs.ris")){file.create("CEC_Refs.ris")}
     
     #Read in existing datafile
-    #Contents will be harvested periodically
-    #From RefManageR
-    bib <- ReadBib("CEC_Refs.bib", check=F)
+    ris <- readLines("CEC_Refs.ris")
     
     #Capture messages and errors in a file
     z <- file("errors.Rout", open="wt")
     sink(z, type="message")
     
-    #Merge the refs already in the file with the new ref added
-    #From RefManageR
-    try(bibnew <- bib + v$ref)
-    
     #Write the updated dataset back to file
-    #From RefManageR
-    try(WriteBib(bibnew, file="CEC_Refs.bib"))
+    try(write(c(ris, v$ref), "CEC_Refs.ris"))
     
     #Close the connection
     sink(type="message")
@@ -152,6 +155,9 @@ server <- function(input, output) {
     #For later printing to the UI. Again, this variable can
     #be reset later when necessary.
     v$con <- readLines("errors.Rout")
+    
+    #If no warning/error messages are returned, print "Success!"
+    if(identical(v$con, character(0))){v$con <- "Sucess!"}
     
     #Delete the log file
     file.remove("errors.Rout")
@@ -167,19 +173,19 @@ server <- function(input, output) {
     reset("notes")
     
     #These variables can be erased in code, unlike output$reference and output$console
+    v$dsp <- NULL
     v$ref <- NULL
     v$con <- NULL
     
   })
   
   #Prints the reference if/when its there and nothing otherwise.
-  #Default behavior was to print "NULL" to the output field
-  #when there was no ref, which was annoying.
-  output$reference <- renderPrint(req(v$ref))
+  output$reference <- renderPrint({ if(is.null(v$dsp)){invisible(v$dsp)}else{ cat(v$dsp) } })
   
   #As above, but sends console messages to the UI. Prints nothing
   #if there are no messages.
-  output$console <- renderPrint(req(v$con))
+  output$console <- renderPrint({ if(is.null(v$con)){ invisible(v$con) }else{ cat(v$con) }  })
+  
   
 }
 
