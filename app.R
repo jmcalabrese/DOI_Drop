@@ -81,23 +81,9 @@ server <- function(input, output) {
   
   observeEvent(input$appHelp, {
     showModal(modalDialog(
-      title = "DOI Drop help",
-      "DOI drop takes a DOI, looks it up via the http://dx.doi.org service,",
-      "and returns the corresponding reference.",
-      "You can then check the reference for accuracy, note any corrections that",
-      "need to be made, and submit it to the database.",
-      tags$br(),
-      tags$br(),
-      "To use the app:",
-      tags$div(
-        tags$ol(
-          tags$li("Paste the DOI in the \"Enter a DOI\" box and press the \"Get reference\" button"),
-          tags$li("Check the resulting reference for errors"),
-          tags$li("Briefly describe any corrections in the \"Note corrections\" box"),
-          tags$li("Click \"Submit\" to save the reference and correction notes"),
-          tags$li("To submit another reference, click \"Reset all fields\", and repeat the above steps")
-        )
-      ),
+      title = "DOI Drop help", 
+      fluidPage(includeMarkdown("help.md")),
+      size = "m",
       easyClose = TRUE
     ))
   })
@@ -115,8 +101,7 @@ server <- function(input, output) {
   insertUI("#console", where = "beforeEnd", ui = NULL)  
   
   #Attempt DOI lookup only on "Get reference" button click
-  #eventReactive triggers each time button is clicked
-  REF <- eventReactive(input$getrefButton, {
+  observeEvent(input$getrefButton, {
     
     #Set some ref formatting options
     #From RefManageR
@@ -125,13 +110,9 @@ server <- function(input, output) {
     #Look up the DOI and return the ref
     #Takes DOI from the input box on webapp
     #From RefManageR
-    GetBibEntryWithDOI( rev(unlist(strsplit(input$doi, split="https://doi.org/")))[1] )
+    v$ref <- GetBibEntryWithDOI( rev(unlist(strsplit(input$doi, split="https://doi.org/")))[1] )
     
   })
-  
-  #Store the ref in a reactive variable that can
-  #later be reset.
-  observe({ v$ref <- REF() })
   
   #Actions to perform when user hits the submit botton
   observeEvent(input$submitButton, {
@@ -194,11 +175,11 @@ server <- function(input, output) {
   #Prints the reference if/when its there and nothing otherwise.
   #Default behavior was to print "NULL" to the output field
   #when there was no ref, which was annoying.
-  output$reference <- renderPrint({ if(is.null(v$ref)){invisible(v$ref)}else{v$ref} })
+  output$reference <- renderPrint(req(v$ref))
   
   #As above, but sends console messages to the UI. Prints nothing
   #if there are no messages.
-  output$console <- renderPrint({ if(is.null(v$con)){ invisible(v$con) }else{ v$con }  })
+  output$console <- renderPrint(req(v$con))
   
 }
 
