@@ -1,6 +1,6 @@
 # DOI_Drop
 
-A webapp to download scientific references from the dx.doi.org service in bibtex format. After download, the user is 
+A webapp to download scientific references from the crossref API in RIS format. After download, the user is 
 then given the chance to note any correction that need to be made before submitting the ref. Once submitted, the ref 
 is written to file in the app's directory.
 

@@ -1,4 +1,4 @@
-DOI drop takes a DOI, looks it up via the http://dx.doi.org service, and returns the corresponding reference. You can then check the reference for accuracy, note any corrections that need to be made, and submit it to the database. 
+DOI drop takes a DOI, looks it up via the crossref API, and returns the corresponding reference. You can then check the reference for accuracy, note any corrections that need to be made, and submit it to the database. 
 
 To use the app:
 
